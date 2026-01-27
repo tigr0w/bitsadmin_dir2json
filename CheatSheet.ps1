@@ -9,14 +9,15 @@ License: BSD 3-Clause
 # Collection
 # --------------------------------
 # Create directory listing (Windows PowerShell)
-# "-Depth 15" can also be used instead of "-Recurse" to specify a maximum recursion depth
-# Path can also be a network share: "\\?\UNC\FS01\Share" instead of "\\?\C:\". FullName.Replace("\\?\","") then also needs to be updated to FullName.Replace("\?\UNC","")
-Get-ChildItem -LiteralPath '\\?\C:\' -Depth 25 -Force | ForEach-Object { [PSCustomObject]@{Name=$_.Name; Mode=$_.Mode; Length=$_.Length; LastWriteTime=$_.LastWriteTime.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss'); FullName=$_.FullName.Replace('\\?\','') } } | Export-Csv -Encoding utf8 -NoTypeInformation Drive_C.csv
+# The '-Depth 25' parameter can also be replaced with '-Recurse' to use unlimited recursion
+# The path can also be a network share in which case '\\?\C:\' needs to be replacd with '\\?\UNC\FS01\Share'
+Get-ChildItem -LiteralPath '\\?\C:\' -Depth 25 -Force | ForEach-Object { [PSCustomObject]@{Name=$_.Name; Mode=$_.Mode; Length=$_.Length; LastWriteTime=$_.LastWriteTime.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss'); FullName=$_.FullName -replace '^\\\\\?\\','' -replace '^UNC','\' } } | Export-Csv -Encoding utf8 -NoTypeInformation Drive_C.csv
 
 # Create directory listing (PowerShell Core)
 # Even though the Windows PowerShell oneliner can also be used in PowerShell Core, the PowerShell Core onlineliner is a bit shorter and looks a bit cleaner
 # Dash is added to Mode attribute to have the PowerShell Core listing match the Windows PowerShell one. PowerShell core updates the first Mode flag ('d') to 'l' in case the folder is a symlink
 # By default PowerShell Core does not enter into symlinked directories, but this can be forced using the -FollowSymlink parameter
+# Be aware that for some reason this oneliner touches every file, e.g. if there are 10 files in a directory, it will first list the directory and then iterate over each of the 10 files. When enumerating a network share over a high-latency connection, this make the collection very slow. Windows PowerShell does not manifest such behavior.
 Get-ChildItem -Recurse -Force -Path 'C:\' | Foreach-Object { [PSCustomObject]@{Name=$_.Name; Mode=$_.Mode+'-'; Length=$_.Length; LastWriteTime=$_.LastWriteTime.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss'); FullName=$_.FullName } } | Export-Csv -Encoding utf8 -NoTypeInformation Drive_C.csv
 
 # Create directory listing (Dir2json)
